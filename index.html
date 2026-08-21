@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>YSD-PM — Quản lý Dự án theo PMI/PMBOK</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📋</text></svg>">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">📋 <span>YSD-PM</span><small data-i18n="brand.subtitle">Quản lý Dự án theo PMI/PMBOK</small></div>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="dashboard" data-i18n="nav.dashboard">Bảng điều khiển</button>
+    <button class="tab-btn" data-tab="tasks" data-i18n="nav.tasks">Công việc</button>
+    <button class="tab-btn" data-tab="forms" data-i18n="nav.forms">Biểu mẫu</button>
+    <button class="tab-btn" data-tab="masterdata" data-i18n="nav.masterdata">Danh mục</button>
+    <button class="tab-btn" data-tab="exportHistory" data-i18n="nav.exportHistory">Lịch sử xuất</button>
+    <button class="tab-btn" data-tab="settings" data-i18n="nav.settings">Cài đặt</button>
+  </nav>
+  <div class="lang-switch">
+    <button class="lang-btn active" data-lang="vi" onclick="setLang('vi')">VI</button>
+    <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+  </div>
+  <div id="connStatus" class="conn-status" data-i18n="conn.none">⚪ Chưa kết nối</div>
+</header>
+
+<main>
+  <!-- DASHBOARD -->
+  <section id="tab-dashboard" class="tab-panel active">
+    <div class="panel-head">
+      <h1 data-i18n="dash.title">Bảng điều khiển</h1>
+      <button id="btnRefreshDash" class="btn" data-i18n="dash.refresh">🔄 Làm mới</button>
+    </div>
+
+    <h2 data-i18n="dash.pmMap">Quy trình PMI/PMBOK — 5 Nhóm quy trình</h2>
+    <div class="pm-map">
+      <span class="step" data-i18n="pmmap.1">1. Khởi tạo</span><span class="arrow">→</span>
+      <span class="step" data-i18n="pmmap.2">2. Lập kế hoạch</span><span class="arrow">→</span>
+      <span class="step" data-i18n="pmmap.3">3. Thực thi</span><span class="arrow">→</span>
+      <span class="step" data-i18n="pmmap.5">5. Kết thúc</span>
+      <span class="arrow">⟲</span><span class="step" data-i18n="pmmap.4">4. Giám sát &amp; Kiểm soát (song song, xuyên suốt)</span>
+    </div>
+
+    <div class="stat-grid" id="statGrid"></div>
+    <h2 data-i18n="dash.bySop">Theo giai đoạn dự án (PMI)</h2>
+    <div class="phase-grid" id="sopGrid"></div>
+    <h2 data-i18n="dash.dueSoon">Sắp đến hạn / Quá hạn</h2>
+    <table class="task-table" id="dueTable">
+      <thead><tr>
+        <th data-i18n="col.no">#</th><th data-i18n="col.title">Tiêu đề</th><th data-i18n="col.group">Giai đoạn</th>
+        <th data-i18n="col.assignee">Người phụ trách</th><th data-i18n="col.due">Hạn</th><th data-i18n="col.status">Trạng thái</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- TASKS -->
+  <section id="tab-tasks" class="tab-panel">
+    <div class="panel-head">
+      <h1 data-i18n="tasks.title">Công việc dự án (đồng bộ qua GitHub Issues)</h1>
+      <button id="btnNewTask" class="btn btn-primary" data-i18n="tasks.newBtn">+ Giao việc mới</button>
+    </div>
+    <div class="filter-bar">
+      <select id="filterSop"><option value="" data-i18n="tasks.filterAllSop">Tất cả giai đoạn</option></select>
+      <select id="filterAssignee"><option value="" data-i18n="tasks.filterAllAssignee">Tất cả người phụ trách</option></select>
+      <select id="filterState">
+        <option value="all" data-i18n="tasks.filterAllState">Tất cả trạng thái</option>
+        <option value="open" data-i18n="tasks.filterOpen">Đang xử lý</option>
+        <option value="closed" data-i18n="tasks.filterClosed">Hoàn thành</option>
+        <option value="overdue" data-i18n="tasks.filterOverdue">Quá hạn</option>
+      </select>
+      <button id="btnApplyFilter" class="btn" data-i18n="tasks.filterBtn">Lọc</button>
+    </div>
+    <table class="task-table" id="taskTable">
+      <thead><tr>
+        <th data-i18n="col.no">#</th><th data-i18n="col.title">Tiêu đề</th><th data-i18n="col.group">Giai đoạn</th>
+        <th data-i18n="col.assignee">Người phụ trách</th><th data-i18n="col.due">Hạn</th><th data-i18n="col.status">Trạng thái</th>
+        <th data-i18n="col.action">Thao tác</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- FORMS -->
+  <section id="tab-forms" class="tab-panel">
+    <h1 data-i18n="forms.title">Xuất biểu mẫu Word / Excel theo PMI/PMBOK</h1>
+    <p class="muted" data-i18n="forms.desc">Biểu mẫu quản lý dự án tương ứng 5 nhóm quy trình PMBOK, theo thể thức hành chính Việt Nam. Có thể nạp nhanh dữ liệu từ 1 công việc đã tạo. Nội dung biểu mẫu luôn bằng tiếng Việt.</p>
+    <div class="form-picker">
+      <label><span data-i18n="forms.phaseLabel">Giai đoạn PMI</span>
+        <select id="formPhase"></select>
+      </label>
+      <label><span data-i18n="forms.typeLabel">Loại biểu mẫu</span>
+        <select id="formType"></select>
+      </label>
+      <label><span data-i18n="forms.prefillLabel">Nạp dữ liệu từ công việc (tuỳ chọn)</span>
+        <select id="formPrefillTask"><option value="" data-i18n="forms.noPrefill">— Không nạp —</option></select>
+      </label>
+    </div>
+    <div id="formFieldsContainer" class="form-fields"></div>
+    <div class="form-actions">
+      <button id="btnGenerateForm" class="btn btn-primary" data-i18n="forms.download">⬇️ Tải xuống</button>
+    </div>
+  </section>
+
+  <!-- MASTER DATA -->
+  <section id="tab-masterdata" class="tab-panel">
+    <h1 data-i18n="md.title">Danh mục dùng chung (Droplist)</h1>
+    <p class="muted" data-i18n="md.desc">Các danh sách này dùng chung cho mọi người qua repo GitHub. Thêm/xoá rồi bấm "Lưu danh mục" để mọi người cùng thấy. Cũng có thể thêm nhanh ngay khi điền biểu mẫu (chọn "+ Thêm mới...").</p>
+    <div id="masterDataContainer" class="md-grid"></div>
+    <div class="form-actions">
+      <button id="btnSaveMasterData" class="btn btn-primary" data-i18n="md.saveAllBtn">💾 Lưu danh mục</button>
+    </div>
+  </section>
+
+  <!-- EXPORT HISTORY -->
+  <section id="tab-exportHistory" class="tab-panel">
+    <h1 data-i18n="export.title">Lịch sử xuất biểu mẫu</h1>
+    <p class="muted" data-i18n="export.desc">Ghi lại mỗi lần xuất biểu mẫu: ai xuất, khi nào, tên file gì — lưu chung trên GitHub.</p>
+    <table class="task-table" id="exportLogTable">
+      <thead><tr>
+        <th data-i18n="export.col.time">Thời gian</th><th data-i18n="export.col.form">Loại biểu mẫu</th>
+        <th data-i18n="export.col.file">Tên file</th><th data-i18n="export.col.user">Người xuất</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="tab-settings" class="tab-panel">
+    <h1 data-i18n="settings.title">Cài đặt kết nối GitHub</h1>
+    <p class="muted" data-i18n="settings.desc">Dữ liệu công việc được lưu dưới dạng GitHub Issues trên repo dự án. Mỗi người dùng tự nhập Access Token của mình — token chỉ lưu trong trình duyệt của bạn (localStorage), không gửi đi đâu khác ngoài api.github.com.</p>
+    <form id="settingsForm" class="settings-form">
+      <label><span data-i18n="settings.company">Tên công ty / dự án (hiển thị trên biểu mẫu)</span> <input type="text" id="cfgCompany" placeholder="ví dụ: CÔNG TY TNHH YASUDA YEN XA" /></label>
+      <label><span data-i18n="settings.owner">Chủ repo (owner)</span> <input type="text" id="cfgOwner" placeholder="ví dụ: XuBi-YSD" required /></label>
+      <label><span data-i18n="settings.repo">Tên repo</span> <input type="text" id="cfgRepo" placeholder="ví dụ: YSD-PM" required /></label>
+      <label><span data-i18n="settings.token">Personal Access Token (fine-grained, quyền Issues + Contents: Read & Write)</span>
+        <input type="password" id="cfgToken" placeholder="github_pat_..." required /></label>
+      <div class="settings-actions">
+        <button type="submit" class="btn btn-primary" data-i18n="settings.save">💾 Lưu &amp; Kết nối</button>
+        <button type="button" id="btnTestConn" class="btn" data-i18n="settings.test">🔌 Kiểm tra kết nối</button>
+        <button type="button" id="btnClearToken" class="btn btn-danger" data-i18n="settings.clear">🗑️ Xoá token khỏi trình duyệt</button>
+      </div>
+    </form>
+    <details class="help-box">
+      <summary data-i18n="settings.help.summary">Hướng dẫn tạo Personal Access Token (1 lần)</summary>
+      <ol>
+        <li data-i18n="settings.help.1">Vào GitHub → Settings → Developer settings → Fine-grained tokens → Generate new token.</li>
+        <li data-i18n="settings.help.2">Repository access: chọn đúng repo này (không chọn "All repositories").</li>
+        <li data-i18n="settings.help.3">Permissions → chọn "Read and write" cho cả Issues và Contents. (Không cần quyền nào khác.)</li>
+        <li data-i18n="settings.help.4">Tạo token, copy và dán vào ô trên. Token chỉ hoạt động cho riêng repo này.</li>
+      </ol>
+    </details>
+  </section>
+</main>
+
+<div id="modalRoot"></div>
+
+<script src="i18n.js"></script>
+<script src="github.js"></script>
+<script src="masterdata.js"></script>
+<script src="exportlog.js"></script>
+<script src="templates.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

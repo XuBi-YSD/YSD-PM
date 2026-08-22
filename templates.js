@@ -113,6 +113,31 @@ function objRowsToTr(rows, columns) {
   return (rows || []).map((row) => `<tr>${columns.map((c) => `<td>${escapeHtml(row[c.key] || "")}</td>`).join("")}</tr>`).join("");
 }
 
+/**
+ * Đọc mức phân cấp (depth) từ mã WBS dạng số, cách nhau bởi dấu chấm.
+ * Quy ước: "0" -> depth 0 (gốc); "X.0" -> depth 1 (tiêu đề nhóm X); "X.Y" -> depth 2 (con của X);
+ * "X.Y.Z" -> depth 3; mã không theo quy ước "N.0" (vd "1", "1.1") vẫn được tính hợp lý theo số đoạn.
+ */
+function wbsDepth(code) {
+  const segments = String(code || "").trim().split(".").filter(Boolean);
+  if (!segments.length) return 0;
+  const last = segments[segments.length - 1];
+  return last === "0" ? Math.max(0, segments.length - 1) : segments.length;
+}
+
+/** Render bảng WBS có thụt lề theo cấp + in đậm/tô nền các mục cha, dựa trên mã WBS của từng dòng. */
+function wbsRowsToTr(rows) {
+  return (rows || []).map((row) => {
+    const depth = wbsDepth(row.code);
+    const indent = "&nbsp;&nbsp;&nbsp;&nbsp;".repeat(depth);
+    const isTopHeading = depth === 0;
+    const isGroupHeading = depth === 1;
+    const rowStyle = isTopHeading ? ' style="background:#d9e6f5;"' : isGroupHeading ? ' style="background:#eef4fa;"' : "";
+    const nameStyle = (isTopHeading || isGroupHeading) ? ' style="font-weight:bold;"' : "";
+    return `<tr${rowStyle}><td>${escapeHtml(row.code || "")}</td><td${nameStyle}>${indent}${escapeHtml(row.name || "")}</td><td>${escapeHtml(row.owner || "")}</td><td>${escapeHtml(row.notes || "")}</td></tr>`;
+  }).join("");
+}
+
 // ---------------------------------------------------------------------------
 // FORM DEFINITIONS — theo 5 Nhóm quy trình PMBOK
 // Field types: text | textarea | select | date | droplist (source: projects|sponsors|stakeholders|contractors|teamMembers)
@@ -251,8 +276,7 @@ const FORM_DEFS = [
       ] },
     ],
     generate(d, ctx) {
-      const cols = [{ key: "code" }, { key: "name" }, { key: "owner" }, { key: "notes" }];
-      const rows = objRowsToTr(d.rows, cols);
+      const rows = wbsRowsToTr(d.rows);
       const body = `
         <p class="title">${escapeHtml(ctx.company)}</p>
         <p class="title">CẤU TRÚC PHÂN RÃ CÔNG VIỆC (WBS)</p>

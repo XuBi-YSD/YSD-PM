@@ -108,12 +108,9 @@ function fieldLine(label, value, unit) {
   return `<p><span class="bold">${escapeHtml(label)}:</span> ${escapeHtml(value)}${unit ? " " + escapeHtml(unit) : ""}</p>`;
 }
 
-/** Turn a multi-line textarea ("col1, col2, col3\ncol1, col2, col3") into <tr> rows for a register table. */
-function linesToRows(text, nCols) {
-  return (text || "").split("\n").filter((l) => l.trim()).map((line) => {
-    const parts = line.split(",").map((s) => s.trim());
-    return `<tr>${Array.from({ length: nCols }, (_, i) => `<td>${escapeHtml(parts[i] || "")}</td>`).join("")}</tr>`;
-  }).join("");
+/** Turn an array of row objects (from a dynamic rowtable field) into <tr> HTML for a register table. */
+function objRowsToTr(rows, columns) {
+  return (rows || []).map((row) => `<tr>${columns.map((c) => `<td>${escapeHtml(row[c.key] || "")}</td>`).join("")}</tr>`).join("");
 }
 
 // ---------------------------------------------------------------------------
@@ -173,10 +170,17 @@ const FORM_DEFS = [
     fields: [
       { key: "project", label: "Dự án", labelEn: "Project", type: "droplist", source: "projects", required: true },
       { key: "compiledBy", label: "Người lập", labelEn: "Compiled by", type: "droplist", source: "teamMembers" },
-      { key: "rows", label: "Danh sách (mỗi dòng: Tên, Vai trò, Quyền lực H/M/L, Quan tâm H/M/L, Kỳ vọng chính)", labelEn: "List (one per line: Name, Role, Power H/M/L, Interest H/M/L, Key expectation)", type: "textarea", full: true, required: true },
+      { key: "rows", label: "Danh sách các bên liên quan", labelEn: "Stakeholder list", type: "rowtable", full: true, required: true, columns: [
+        { key: "name", label: "Tên", labelEn: "Name", type: "text" },
+        { key: "role", label: "Vai trò", labelEn: "Role", type: "bilingual-droplist", source: "stakeholderRoles" },
+        { key: "power", label: "Quyền lực", labelEn: "Power", type: "vocab-select", source: "riskLevels" },
+        { key: "interest", label: "Quan tâm", labelEn: "Interest", type: "vocab-select", source: "riskLevels" },
+        { key: "expectation", label: "Kỳ vọng chính", labelEn: "Key expectation", type: "text" },
+      ] },
     ],
     generate(d, ctx) {
-      const rows = linesToRows(d.rows, 5);
+      const cols = [{ key: "name" }, { key: "role" }, { key: "power" }, { key: "interest" }, { key: "expectation" }];
+      const rows = objRowsToTr(d.rows, cols);
       const body = `
         <p class="title">${escapeHtml(ctx.company)}</p>
         <p class="title">ĐĂNG KÝ CÁC BÊN LIÊN QUAN</p>
@@ -239,10 +243,16 @@ const FORM_DEFS = [
     fields: [
       { key: "project", label: "Dự án", labelEn: "Project", type: "droplist", source: "projects", required: true },
       { key: "preparedBy", label: "Người lập", labelEn: "Prepared by", type: "droplist", source: "teamMembers" },
-      { key: "rows", label: "Danh sách (mỗi dòng: Mã WBS, Tên công việc/gói công việc, Người phụ trách, Ghi chú)", labelEn: "List (one per line: WBS code, Work package name, Owner, Notes)", type: "textarea", full: true, required: true },
+      { key: "rows", label: "Danh sách gói công việc (WBS)", labelEn: "Work package list", type: "rowtable", full: true, required: true, columns: [
+        { key: "code", label: "Mã WBS", labelEn: "WBS code", type: "text", placeholder: "vd: 3.1.1" },
+        { key: "name", label: "Tên công việc / Gói công việc", labelEn: "Work package name", type: "text" },
+        { key: "owner", label: "Người phụ trách", labelEn: "Owner", type: "droplist", source: "teamMembers" },
+        { key: "notes", label: "Ghi chú", labelEn: "Notes", type: "text" },
+      ] },
     ],
     generate(d, ctx) {
-      const rows = linesToRows(d.rows, 4);
+      const cols = [{ key: "code" }, { key: "name" }, { key: "owner" }, { key: "notes" }];
+      const rows = objRowsToTr(d.rows, cols);
       const body = `
         <p class="title">${escapeHtml(ctx.company)}</p>
         <p class="title">CẤU TRÚC PHÂN RÃ CÔNG VIỆC (WBS)</p>
@@ -265,10 +275,16 @@ const FORM_DEFS = [
     fields: [
       { key: "project", label: "Dự án", labelEn: "Project", type: "droplist", source: "projects", required: true },
       { key: "preparedBy", label: "Người lập", labelEn: "Prepared by", type: "droplist", source: "teamMembers" },
-      { key: "rows", label: "Danh sách (mỗi dòng: Tên mốc/hoạt động, Ngày bắt đầu, Ngày kết thúc, Người phụ trách)", labelEn: "List (one per line: Milestone/activity, Start date, End date, Owner)", type: "textarea", full: true, required: true },
+      { key: "rows", label: "Danh sách mốc / hoạt động", labelEn: "Milestone / activity list", type: "rowtable", full: true, required: true, columns: [
+        { key: "milestone", label: "Tên mốc / hoạt động", labelEn: "Milestone / activity", type: "text" },
+        { key: "startDate", label: "Ngày bắt đầu", labelEn: "Start date", type: "date" },
+        { key: "endDate", label: "Ngày kết thúc", labelEn: "End date", type: "date" },
+        { key: "owner", label: "Người phụ trách", labelEn: "Owner", type: "droplist", source: "teamMembers" },
+      ] },
     ],
     generate(d, ctx) {
-      const rows = linesToRows(d.rows, 4);
+      const cols = [{ key: "milestone" }, { key: "startDate" }, { key: "endDate" }, { key: "owner" }];
+      const rows = objRowsToTr(d.rows, cols);
       const body = `
         <p class="title">${escapeHtml(ctx.company)}</p>
         <p class="title">KẾ HOẠCH TIẾN ĐỘ / MỐC DỰ ÁN</p>
@@ -291,10 +307,17 @@ const FORM_DEFS = [
     fields: [
       { key: "project", label: "Dự án", labelEn: "Project", type: "droplist", source: "projects", required: true },
       { key: "preparedBy", label: "Người lập", labelEn: "Prepared by", type: "droplist", source: "teamMembers" },
-      { key: "rows", label: "Danh sách (mỗi dòng: Hạng mục, Đơn vị, Số lượng, Đơn giá VNĐ, Thành tiền VNĐ)", labelEn: "List (one per line: Item, Unit, Qty, Unit price VND, Total VND)", type: "textarea", full: true, required: true },
+      { key: "rows", label: "Danh sách hạng mục chi phí", labelEn: "Cost item list", type: "rowtable", full: true, required: true, columns: [
+        { key: "item", label: "Hạng mục", labelEn: "Item", type: "text" },
+        { key: "unit", label: "Đơn vị", labelEn: "Unit", type: "text" },
+        { key: "qty", label: "Số lượng", labelEn: "Qty", type: "text" },
+        { key: "unitPrice", label: "Đơn giá (VNĐ)", labelEn: "Unit price (VND)", type: "text" },
+        { key: "total", label: "Thành tiền (VNĐ)", labelEn: "Total (VND)", type: "text" },
+      ] },
     ],
     generate(d, ctx) {
-      const rows = linesToRows(d.rows, 5);
+      const cols = [{ key: "item" }, { key: "unit" }, { key: "qty" }, { key: "unitPrice" }, { key: "total" }];
+      const rows = objRowsToTr(d.rows, cols);
       const body = `
         <p class="title">${escapeHtml(ctx.company)}</p>
         <p class="title">ƯỚC TÍNH &amp; NGÂN SÁCH CHI PHÍ</p>
@@ -317,10 +340,17 @@ const FORM_DEFS = [
     fields: [
       { key: "project", label: "Dự án", labelEn: "Project", type: "droplist", source: "projects", required: true },
       { key: "preparedBy", label: "Người lập", labelEn: "Prepared by", type: "droplist", source: "teamMembers" },
-      { key: "rows", label: "Danh sách (mỗi dòng: Mô tả rủi ro, Khả năng H/M/L, Tác động H/M/L, Biện pháp ứng phó, Người phụ trách)", labelEn: "List (one per line: Risk description, Likelihood H/M/L, Impact H/M/L, Response, Owner)", type: "textarea", full: true, required: true },
+      { key: "rows", label: "Danh sách rủi ro", labelEn: "Risk list", type: "rowtable", full: true, required: true, columns: [
+        { key: "description", label: "Mô tả rủi ro", labelEn: "Risk description", type: "text" },
+        { key: "likelihood", label: "Khả năng", labelEn: "Likelihood", type: "vocab-select", source: "riskLevels" },
+        { key: "impact", label: "Tác động", labelEn: "Impact", type: "vocab-select", source: "riskLevels" },
+        { key: "response", label: "Biện pháp ứng phó", labelEn: "Response", type: "text" },
+        { key: "owner", label: "Người phụ trách", labelEn: "Owner", type: "droplist", source: "teamMembers" },
+      ] },
     ],
     generate(d, ctx) {
-      const rows = linesToRows(d.rows, 5);
+      const cols = [{ key: "description" }, { key: "likelihood" }, { key: "impact" }, { key: "response" }, { key: "owner" }];
+      const rows = objRowsToTr(d.rows, cols);
       const body = `
         <p class="title">${escapeHtml(ctx.company)}</p>
         <p class="title">SỔ ĐĂNG KÝ RỦI RO</p>
@@ -343,10 +373,17 @@ const FORM_DEFS = [
     fields: [
       { key: "project", label: "Dự án", labelEn: "Project", type: "droplist", source: "projects", required: true },
       { key: "preparedBy", label: "Người lập", labelEn: "Prepared by", type: "droplist", source: "teamMembers" },
-      { key: "rows", label: "Bảng truyền thông (mỗi dòng: Đối tượng, Nội dung, Tần suất, Kênh, Người phụ trách)", labelEn: "Table (one per line: Audience, Content, Frequency, Channel, Owner)", type: "textarea", full: true, required: true },
+      { key: "rows", label: "Bảng truyền thông", labelEn: "Communications table", type: "rowtable", full: true, required: true, columns: [
+        { key: "audience", label: "Đối tượng", labelEn: "Audience", type: "text" },
+        { key: "content", label: "Nội dung", labelEn: "Content", type: "text" },
+        { key: "frequency", label: "Tần suất", labelEn: "Frequency", type: "text" },
+        { key: "channel", label: "Kênh", labelEn: "Channel", type: "text" },
+        { key: "owner", label: "Người phụ trách", labelEn: "Owner", type: "droplist", source: "teamMembers" },
+      ] },
     ],
     generate(d, ctx) {
-      const rows = linesToRows(d.rows, 5).replace(/<td>/g, '<td style="border:1px solid #999;">');
+      const cols = [{ key: "audience" }, { key: "content" }, { key: "frequency" }, { key: "channel" }, { key: "owner" }];
+      const rows = objRowsToTr(d.rows, cols).replace(/<td>/g, '<td style="border:1px solid #999;">');
       const body = `
         ${vnHeader(ctx.company, ctx.formCode)}
         <div class="title">Kế hoạch truyền thông</div>
@@ -373,10 +410,16 @@ const FORM_DEFS = [
     fields: [
       { key: "project", label: "Dự án", labelEn: "Project", type: "droplist", source: "projects", required: true },
       { key: "preparedBy", label: "Người lập", labelEn: "Prepared by", type: "droplist", source: "teamMembers" },
-      { key: "rows", label: "Danh sách (mỗi dòng: Hạng mục, Loại hợp đồng, Nhà cung cấp dự kiến, Thời gian cần)", labelEn: "List (one per line: Item, Contract type, Prospective vendor, Needed by)", type: "textarea", full: true, required: true },
+      { key: "rows", label: "Danh sách hạng mục mua sắm", labelEn: "Procurement item list", type: "rowtable", full: true, required: true, columns: [
+        { key: "item", label: "Hạng mục", labelEn: "Item", type: "text" },
+        { key: "contractType", label: "Loại hợp đồng", labelEn: "Contract type", type: "bilingual-droplist", source: "contractTypes" },
+        { key: "vendor", label: "Nhà cung cấp dự kiến", labelEn: "Prospective vendor", type: "droplist", source: "contractors" },
+        { key: "neededBy", label: "Thời gian cần", labelEn: "Needed by", type: "date" },
+      ] },
     ],
     generate(d, ctx) {
-      const rows = linesToRows(d.rows, 4).replace(/<td>/g, '<td style="border:1px solid #999;">');
+      const cols = [{ key: "item" }, { key: "contractType" }, { key: "vendor" }, { key: "neededBy" }];
+      const rows = objRowsToTr(d.rows, cols).replace(/<td>/g, '<td style="border:1px solid #999;">');
       const body = `
         ${vnHeader(ctx.company, ctx.formCode)}
         <div class="title">Kế hoạch mua sắm</div>
@@ -407,8 +450,8 @@ const FORM_DEFS = [
       { key: "reportPeriod", label: "Kỳ báo cáo", labelEn: "Reporting period", type: "text", placeholder: "vd: Tuần 34 (18-24/08/2026)", required: true },
       { key: "reportedBy", label: "Người báo cáo", labelEn: "Reported by", type: "droplist", source: "teamMembers" },
       { key: "progressSummary", label: "Tóm tắt tiến độ thực hiện", labelEn: "Progress summary", type: "textarea", full: true, required: true },
-      { key: "scheduleStatus", label: "Tình trạng tiến độ", labelEn: "Schedule status", type: "select", options: ["Đúng tiến độ", "Chậm tiến độ", "Vượt tiến độ"] },
-      { key: "costStatus", label: "Tình trạng chi phí", labelEn: "Cost status", type: "select", options: ["Trong ngân sách", "Vượt ngân sách", "Dưới ngân sách"] },
+      { key: "scheduleStatus", label: "Tình trạng tiến độ", labelEn: "Schedule status", type: "bilingual-droplist", source: "scheduleStatuses" },
+      { key: "costStatus", label: "Tình trạng chi phí", labelEn: "Cost status", type: "bilingual-droplist", source: "costStatuses" },
       { key: "keyIssues", label: "Vấn đề / rủi ro nổi bật", labelEn: "Key issues / risks", type: "textarea", full: true },
       { key: "nextSteps", label: "Kế hoạch kỳ tới", labelEn: "Next steps", type: "textarea", full: true },
     ],
@@ -477,7 +520,7 @@ const FORM_DEFS = [
       { key: "impactScope", label: "Tác động đến Phạm vi", labelEn: "Impact on Scope", type: "textarea", full: true },
       { key: "impactSchedule", label: "Tác động đến Tiến độ", labelEn: "Impact on Schedule", type: "text" },
       { key: "impactCost", label: "Tác động đến Chi phí (VNĐ)", labelEn: "Impact on Cost (VND)", type: "text" },
-      { key: "approvalStatus", label: "Trạng thái phê duyệt", labelEn: "Approval status", type: "select", options: ["Chờ duyệt (CCB)", "Đã duyệt", "Từ chối", "Duyệt có điều kiện"] },
+      { key: "approvalStatus", label: "Trạng thái phê duyệt", labelEn: "Approval status", type: "bilingual-droplist", source: "approvalStatuses" },
     ],
     generate(d, ctx) {
       const body = `
@@ -508,10 +551,17 @@ const FORM_DEFS = [
     fields: [
       { key: "project", label: "Dự án", labelEn: "Project", type: "droplist", source: "projects", required: true },
       { key: "preparedBy", label: "Người lập", labelEn: "Prepared by", type: "droplist", source: "teamMembers" },
-      { key: "rows", label: "Danh sách (mỗi dòng: Mô tả vấn đề, Mức độ H/M/L, Ngày phát hiện, Người phụ trách, Trạng thái)", labelEn: "List (one per line: Issue description, Severity H/M/L, Date found, Owner, Status)", type: "textarea", full: true, required: true },
+      { key: "rows", label: "Danh sách vấn đề & sai lệch", labelEn: "Issue / variance list", type: "rowtable", full: true, required: true, columns: [
+        { key: "description", label: "Mô tả vấn đề", labelEn: "Issue description", type: "text" },
+        { key: "severity", label: "Mức độ", labelEn: "Severity", type: "vocab-select", source: "riskLevels" },
+        { key: "dateFound", label: "Ngày phát hiện", labelEn: "Date found", type: "date" },
+        { key: "owner", label: "Người phụ trách", labelEn: "Owner", type: "droplist", source: "teamMembers" },
+        { key: "status", label: "Trạng thái", labelEn: "Status", type: "vocab-select", source: "issueStatuses" },
+      ] },
     ],
     generate(d, ctx) {
-      const rows = linesToRows(d.rows, 5);
+      const cols = [{ key: "description" }, { key: "severity" }, { key: "dateFound" }, { key: "owner" }, { key: "status" }];
+      const rows = objRowsToTr(d.rows, cols);
       const body = `
         <p class="title">${escapeHtml(ctx.company)}</p>
         <p class="title">BÁO CÁO VẤN ĐỀ &amp; SAI LỆCH</p>
@@ -600,10 +650,15 @@ const FORM_DEFS = [
     fields: [
       { key: "project", label: "Dự án", labelEn: "Project", type: "droplist", source: "projects", required: true },
       { key: "preparedBy", label: "Người lập", labelEn: "Prepared by", type: "droplist", source: "teamMembers" },
-      { key: "rows", label: "Danh sách (mỗi dòng: Lĩnh vực/Hạng mục, Điều làm tốt/chưa tốt, Đề xuất cải tiến)", labelEn: "List (one per line: Area, What went well/poorly, Improvement suggestion)", type: "textarea", full: true, required: true },
+      { key: "rows", label: "Danh sách bài học kinh nghiệm", labelEn: "Lessons learned list", type: "rowtable", full: true, required: true, columns: [
+        { key: "area", label: "Lĩnh vực / Hạng mục", labelEn: "Area", type: "text" },
+        { key: "whatHappened", label: "Điều làm tốt / chưa tốt", labelEn: "What went well / poorly", type: "text" },
+        { key: "suggestion", label: "Đề xuất cải tiến", labelEn: "Improvement suggestion", type: "text" },
+      ] },
     ],
     generate(d, ctx) {
-      const rows = linesToRows(d.rows, 3);
+      const cols = [{ key: "area" }, { key: "whatHappened" }, { key: "suggestion" }];
+      const rows = objRowsToTr(d.rows, cols);
       const body = `
         <p class="title">${escapeHtml(ctx.company)}</p>
         <p class="title">SỔ BÀI HỌC KINH NGHIỆM</p>

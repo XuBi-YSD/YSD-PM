@@ -108,6 +108,11 @@
     <h1 data-i18n="md.title">Danh mục dùng chung (Droplist)</h1>
     <p class="muted" data-i18n="md.desc">Các danh sách này dùng chung cho mọi người qua repo GitHub. Thêm/xoá rồi bấm "Lưu danh mục" để mọi người cùng thấy. Cũng có thể thêm nhanh ngay khi điền biểu mẫu (chọn "+ Thêm mới...").</p>
     <div id="masterDataContainer" class="md-grid"></div>
+
+    <h2 data-i18n="vocab.title">Danh mục thuật ngữ song ngữ (Vai trò, Trạng thái, Mức độ...)</h2>
+    <p class="muted" data-i18n="vocab.desc">Dùng cho các trường chọn nhanh trong biểu mẫu (vai trò bên liên quan, mức độ rủi ro, trạng thái tiến độ/chi phí/phê duyệt, loại hợp đồng...). Chỉ cần gõ 1 ngôn ngữ (Anh hoặc Việt) — nếu là thuật ngữ PMBOK quen thuộc, ngôn ngữ còn lại sẽ được tự động gợi ý điền.</p>
+    <div id="vocabContainer" class="md-grid"></div>
+
     <div class="form-actions">
       <button id="btnSaveMasterData" class="btn btn-primary" data-i18n="md.saveAllBtn">💾 Lưu danh mục</button>
     </div>
@@ -158,6 +163,7 @@
 
 <script src="i18n.js"></script>
 <script src="github.js"></script>
+<script src="dictionary.js"></script>
 <script src="masterdata.js"></script>
 <script src="exportlog.js"></script>
 <script src="templates.js"></script>

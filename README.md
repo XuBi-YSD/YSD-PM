@@ -13,13 +13,16 @@ YSD-PM/
 ├── index.html       — shell 1 trang, 6 tab
 ├── style.css         — design system (biến CSS, layout)
 ├── i18n.js           — từ điển song ngữ VI/EN cho giao diện
+├── dictionary.js      — từ điển thuật ngữ PMBOK song ngữ (offline), dùng để gợi ý tự dịch
 ├── github.js         — wrapper gọi GitHub Issues API + Contents API (đọc/ghi JSON)
 ├── masterdata.js     — danh mục dùng chung (Dự án, Nhà tài trợ, Bên liên quan, Nhà thầu, Thành viên)
+│                        + danh mục thuật ngữ song ngữ (Vai trò, Mức độ, Trạng thái, Loại hợp đồng)
 ├── exportlog.js       — lịch sử xuất biểu mẫu (data/export_log.json), tính số version _vN
 ├── templates.js       — 16 biểu mẫu PMI/PMBOK, xuất .doc/.xls qua kỹ thuật MSO-HTML
-├── app.js             — controller: tabs, dashboard, tasks, forms, settings
+├── app.js             — controller: tabs, dashboard, tasks, forms, settings, bảng nhập liệu động
 └── data/
     ├── masterdata.json    — danh mục dùng chung (đọc/ghi qua GitHub Contents API)
+    ├── vocab.json          — danh mục thuật ngữ song ngữ {en, vi} (đọc/ghi qua GitHub Contents API)
     └── export_log.json    — lịch sử xuất biểu mẫu
 ```
 
@@ -55,7 +58,19 @@ Nội dung Issue body theo quy ước có thể phân tích lại bằng regex:
 
 ### Danh mục dùng chung & Lịch sử xuất
 
-Lưu tại `data/masterdata.json` và `data/export_log.json`, đọc/ghi qua GitHub Contents API với retry tự động khi gặp lỗi 409 (ghi đè đồng thời). Token cần thêm quyền **Contents: Read and write** ngoài quyền Issues.
+Lưu tại `data/masterdata.json`, `data/vocab.json` và `data/export_log.json`, đọc/ghi qua GitHub Contents API với retry tự động khi gặp lỗi 409 (ghi đè đồng thời). Token cần thêm quyền **Contents: Read and write** ngoài quyền Issues.
+
+### Danh mục thuật ngữ song ngữ & Gợi ý tự dịch (dictionary.js)
+
+Ngoài 5 danh mục "định danh" (Dự án, Nhà tài trợ...), app còn có **7 danh mục thuật ngữ song ngữ** — mỗi mục lưu dạng `{en, vi}` — dùng cho các trường phân loại lặp lại nhiều lần: Vai trò bên liên quan, Mức độ (Cao/Trung bình/Thấp), Trạng thái tiến độ/chi phí/phê duyệt/vấn đề, Loại hợp đồng. Quản lý tại tab **Danh mục** → mục "Danh mục thuật ngữ song ngữ" — **linh động**: thêm/sửa/xoá tự do như các droplist khác, lưu chung qua GitHub.
+
+`dictionary.js` chứa một từ điển PMBOK Anh–Việt tra cứu **offline** (không gọi API dịch máy bên ngoài — giữ đúng triết lý zero-dependency). Khi thêm một mục mới vào droplist song ngữ (trong tab Danh mục hoặc ngay trong biểu mẫu qua "+ Thêm mới..."), chỉ cần gõ **1 ngôn ngữ** — nếu đó là thuật ngữ PMBOK quen thuộc có trong từ điển, ngôn ngữ còn lại sẽ **tự động được gợi ý điền**. Thuật ngữ lạ (tên riêng, biệt ngữ nội bộ...) sẽ không tự dịch được — người dùng cần tự điền cả 2 ô, tránh dịch sai mà không ai biết.
+
+Biểu mẫu xuất ra vẫn luôn dùng giá trị **tiếng Việt** của mục đã chọn (đúng quy định thể thức hành chính) — bản tiếng Anh chỉ hiển thị kèm trong danh sách chọn (dạng "Tiếng Việt (English)") để người nhập liệu dễ tìm đúng thuật ngữ dù quen thuật ngữ tiếng nào hơn.
+
+### Bảng nhập liệu động (rowtable) cho các biểu mẫu dạng sổ đăng ký
+
+9 biểu mẫu dạng "sổ đăng ký" (Stakeholder Register, WBS, Risk Register, Schedule Plan, Cost Budget, Communications Plan, Procurement Plan, Issue/Variance Log, Lessons Learned) dùng field type `"rowtable"` thay vì textarea CSV thô: mỗi biểu mẫu hiển thị một **bảng nhập liệu thật** với nút "+ Thêm dòng"/"✕ Xoá dòng", các cột phân loại (vai trò, mức độ, loại hợp đồng...) là droplist/droplist song ngữ thay vì gõ tay — tránh lỗi khi giá trị chứa dấu phẩy và giảm sai chính tả thuật ngữ.
 
 ### Xuất biểu mẫu Word/Excel — không cần thư viện
 
@@ -84,7 +99,7 @@ Tên file: `YYYYMMDD-TenBieuMau_vN.ext` (N tự tăng nếu xuất trùng loại
 | 15 | 5. Kết thúc | Báo cáo tổng kết dự án (Closure Report) | .doc |
 | 16 | 5. Kết thúc | Sổ bài học kinh nghiệm (Lessons Learned Register) | .xls |
 
-Để thêm biểu mẫu mới: thêm 1 phần tử vào mảng `FORM_DEFS` trong `templates.js` (gồm `id`, `slug`, `phase` 1-5, `label`/`labelEn`, `kind` "doc"|"xls", `fields[]`, hàm `generate(data, ctx)`).
+Để thêm biểu mẫu mới: thêm 1 phần tử vào mảng `FORM_DEFS` trong `templates.js` (gồm `id`, `slug`, `phase` 1-5, `label`/`labelEn`, `kind` "doc"|"xls", `fields[]`, hàm `generate(data, ctx)`). Field types hỗ trợ: `text` | `textarea` | `select` | `date` | `droplist` (nguồn: `projects|sponsors|stakeholders|contractors|teamMembers`) | `bilingual-droplist` (nguồn: 1 trong 7 danh mục thuật ngữ song ngữ, xem mục dưới) | `rowtable` (bảng nhập liệu động, khai báo `columns[]` với các `type` con: `text`, `date`, `droplist`, `vocab-select`, `bilingual-droplist`).
 
 ## Cài đặt & sử dụng
 

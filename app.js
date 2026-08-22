@@ -29,7 +29,7 @@ function switchTab(tab) {
   if (tab === "dashboard") renderDashboard();
   if (tab === "tasks") renderTasks();
   if (tab === "forms") renderFormsTab();
-  if (tab === "masterdata") renderMasterDataTab();
+  if (tab === "masterdata") { renderMasterDataTab(); renderVocabTab(); }
   if (tab === "exportHistory") renderExportHistoryTab();
 }
 
@@ -39,7 +39,7 @@ function onLangChange() {
   renderDashboard();
   if (document.getElementById("tab-tasks").classList.contains("active")) renderTasks();
   if (document.getElementById("tab-forms").classList.contains("active")) renderFormsTab();
-  if (document.getElementById("tab-masterdata").classList.contains("active")) renderMasterDataTab();
+  if (document.getElementById("tab-masterdata").classList.contains("active")) { renderMasterDataTab(); renderVocabTab(); }
   if (document.getElementById("tab-exportHistory").classList.contains("active")) renderExportHistoryTab();
 }
 
@@ -81,15 +81,15 @@ async function loadAll() {
     console.error(e);
   }
   try {
-    await Promise.all([MasterData.load(api), ExportLog.load(api)]);
+    await Promise.all([MasterData.load(api), VocabData.load(api), ExportLog.load(api)]);
   } catch (e) {
-    console.error("Could not load master data / export log:", e);
+    console.error("Could not load master data / vocabulary / export log:", e);
   }
   populateFilterOptions();
   renderDashboard();
   if (document.getElementById("tab-tasks").classList.contains("active")) renderTasks();
   if (document.getElementById("tab-forms").classList.contains("active")) renderFormsTab();
-  if (document.getElementById("tab-masterdata").classList.contains("active")) renderMasterDataTab();
+  if (document.getElementById("tab-masterdata").classList.contains("active")) { renderMasterDataTab(); renderVocabTab(); }
   if (document.getElementById("tab-exportHistory").classList.contains("active")) renderExportHistoryTab();
 }
 
@@ -272,17 +272,114 @@ function fieldLabel(f) {
   return getLang() === "en" && f.labelEn ? f.labelEn : f.label;
 }
 
+let _rowTableDefs = {}; // fieldKey -> field def (columns[], etc.) for the currently rendered form
+let _rowTableCounters = {}; // fieldKey -> next row id
+
 function renderFormFields() {
   const def = FORM_DEFS.find((f) => f.id === document.getElementById("formType").value) || FORM_DEFS[0];
   const container = document.getElementById("formFieldsContainer");
+  _rowTableDefs = {};
+  _rowTableCounters = {};
   container.innerHTML = def.fields.map((f) => {
     const fullCls = f.full ? "full" : "";
     const lbl = fieldLabel(f);
     if (f.type === "droplist") return renderDroplistField(f, fullCls, lbl);
+    if (f.type === "bilingual-droplist") return renderBilingualDroplistField(f, fullCls, lbl);
+    if (f.type === "rowtable") { _rowTableDefs[f.key] = f; _rowTableCounters[f.key] = 0; return renderRowTableField(f, lbl); }
     if (f.type === "textarea") return `<label class="${fullCls}">${lbl}<textarea id="ff_${f.key}" rows="4"></textarea></label>`;
     if (f.type === "select") return `<label class="${fullCls}">${lbl}<select id="ff_${f.key}">${f.options.map((o) => `<option>${o}</option>`).join("")}</select></label>`;
     return `<label class="${fullCls}">${lbl}<input id="ff_${f.key}" type="${f.type === "date" ? "date" : "text"}" placeholder="${f.placeholder || ""}" /></label>`;
   }).join("");
+  // rowtable fields start with one blank row for convenience
+  Object.keys(_rowTableDefs).forEach((key) => addRowTableRow(key));
+}
+
+// ---------------- dynamic row-table fields (Stakeholder Register, WBS, Risk Register...) ----------------
+function rowColLabel(c) { return getLang() === "en" && c.labelEn ? c.labelEn : c.label; }
+function renderRowTableField(f, lbl) {
+  const cols = f.columns;
+  const header = cols.map((c) => `<th>${escapeHtml(rowColLabel(c))}</th>`).join("") + `<th></th>`;
+  return `<div class="full rowtable-field">
+    <label>${lbl}</label>
+    <div class="rowtable-wrap">
+      <table class="rowtable" id="ff_${f.key}_table">
+        <thead><tr>${header}</tr></thead>
+        <tbody id="ff_${f.key}_tbody"></tbody>
+      </table>
+    </div>
+    <button type="button" class="btn" onclick="addRowTableRow('${f.key}')">+ ${t("rowtable.addRow")}</button>
+  </div>`;
+}
+function rowTableCellHtml(fieldKey, rowId, col) {
+  const id = `ff_${fieldKey}_r${rowId}_${col.key}`;
+  if (col.type === "vocab-select") {
+    const options = VocabData.get(col.source);
+    return `<select id="${id}">
+      <option value="">—</option>
+      ${options.map((o) => `<option value="${escapeHtml(o.vi)}">${escapeHtml(o.vi)}${o.en ? " (" + escapeHtml(o.en) + ")" : ""}</option>`).join("")}
+    </select>`;
+  }
+  if (col.type === "droplist") {
+    const options = MasterData.get(col.source);
+    return `<select id="${id}"><option value="">—</option>${options.map((o) => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join("")}</select>`;
+  }
+  if (col.type === "bilingual-droplist") {
+    const options = VocabData.get(col.source);
+    return `<select id="${id}" onchange="onRowVocabChange('${id}')">
+      <option value="">—</option>
+      ${options.map((o) => `<option value="${escapeHtml(o.vi)}">${escapeHtml(o.vi)}</option>`).join("")}
+      <option value="${OTHER_VALUE}">${t("md.addNewOption")}</option>
+    </select><input id="${id}_other" type="text" class="row-other" style="display:none;" placeholder="${t("vocab.viPlaceholder")}" />`;
+  }
+  if (col.type === "date") return `<input type="date" id="${id}" />`;
+  return `<input type="text" id="${id}" placeholder="${col.placeholder || ""}" />`;
+}
+function onRowVocabChange(id) {
+  const sel = document.getElementById(id);
+  const other = document.getElementById(id + "_other");
+  if (!sel || !other) return;
+  other.style.display = sel.value === OTHER_VALUE ? "block" : "none";
+  if (sel.value === OTHER_VALUE) other.focus();
+}
+function addRowTableRow(fieldKey) {
+  const f = _rowTableDefs[fieldKey];
+  const tbody = document.getElementById(`ff_${fieldKey}_tbody`);
+  if (!f || !tbody) return;
+  const rowId = _rowTableCounters[fieldKey]++;
+  const tr = document.createElement("tr");
+  tr.id = `ff_${fieldKey}_row${rowId}`;
+  tr.innerHTML = f.columns.map((c) => `<td>${rowTableCellHtml(fieldKey, rowId, c)}</td>`).join("") +
+    `<td><button type="button" class="row-remove" onclick="removeRowTableRow('${fieldKey}','${tr.id}')">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+function removeRowTableRow(fieldKey, rowElId) {
+  const row = document.getElementById(rowElId);
+  if (row) row.remove();
+}
+function collectRowTableData(f) {
+  const tbody = document.getElementById(`ff_${f.key}_tbody`);
+  if (!tbody) return [];
+  const rows = [];
+  Array.from(tbody.children).forEach((tr) => {
+    const m = /_row(\d+)$/.exec(tr.id);
+    if (!m) return;
+    const rowId = m[1];
+    const obj = {};
+    let hasValue = false;
+    f.columns.forEach((c) => {
+      const cellId = `ff_${f.key}_r${rowId}_${c.key}`;
+      const el = document.getElementById(cellId);
+      let val = el ? el.value.trim() : "";
+      if (c.type === "bilingual-droplist" && val === OTHER_VALUE) {
+        const other = document.getElementById(cellId + "_other");
+        val = other ? other.value.trim() : "";
+      }
+      obj[c.key] = val;
+      if (val) hasValue = true;
+    });
+    if (hasValue) rows.push(obj);
+  });
+  return rows;
 }
 
 document.getElementById("formPrefillTask").addEventListener("change", (e) => {
@@ -315,17 +412,26 @@ async function doGenerateForm() {
   const def = FORM_DEFS.find((f) => f.id === document.getElementById("formType").value);
   const data = {};
   let missing = [];
-  const newDroplistValues = []; // { category, value } typed inline via "+ Add new"
+  const newDroplistValues = []; // { category, value } typed inline via "+ Add new" (single-language master data)
+  const newVocabValues = []; // { category, pair: {en, vi} } typed inline via "+ Add new" (bilingual vocabulary)
   def.fields.forEach((f) => {
     if (f.type === "droplist") {
       data[f.key] = readDroplistValue(f);
       const sel = document.getElementById("ff_" + f.key);
       if (sel && sel.value === "__other__" && data[f.key]) newDroplistValues.push({ category: f.source, value: data[f.key] });
+    } else if (f.type === "bilingual-droplist") {
+      const pair = readBilingualDroplistValue(f);
+      data[f.key] = pair.vi; // exported administrative forms always use the Vietnamese term
+      const sel = document.getElementById("ff_" + f.key);
+      if (sel && sel.value === "__other__" && pair.vi) newVocabValues.push({ category: f.source, pair });
+    } else if (f.type === "rowtable") {
+      data[f.key] = collectRowTableData(f);
     } else {
       const el = document.getElementById("ff_" + f.key);
       data[f.key] = el ? el.value : "";
     }
-    if (f.required && !data[f.key]) missing.push(fieldLabel(f));
+    const isEmpty = f.type === "rowtable" ? !(data[f.key] && data[f.key].length) : !data[f.key];
+    if (f.required && isEmpty) missing.push(fieldLabel(f));
   });
   if (missing.length) { alert(t("alert.missingFields", { fields: missing.join(", ") })); return; }
 
@@ -344,6 +450,7 @@ async function doGenerateForm() {
   if (api) {
     await ExportLog.record(api, { slug: def.slug, formLabel: def.label, fileName, user: currentUser });
     for (const nv of newDroplistValues) await MasterData.quickAdd(api, nv.category, nv.value);
+    for (const nv of newVocabValues) await VocabData.quickAdd(api, nv.category, nv.pair);
     if (document.getElementById("tab-exportHistory").classList.contains("active")) renderExportHistoryTab();
   }
 }

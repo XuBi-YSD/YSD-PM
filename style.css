@@ -130,6 +130,26 @@ table.task-table tr:hover td { background: #f7fafc; }
 .md-add { display: flex; gap: 6px; }
 .md-add input { flex: 1; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 13px; }
 
+/* Bilingual add row (Vocabulary droplists): 2 inputs side by side + button */
+.bilingual-add { flex-wrap: wrap; }
+.bilingual-add input { min-width: 120px; }
+
+/* Bilingual "+ Add new" inside a standalone form field (select + 2 stacked inputs) */
+.form-fields .bilingual-add { flex-direction: column; align-items: stretch; margin-top: 6px; }
+.form-fields .bilingual-add input { width: 100%; margin-bottom: 4px; }
+.form-fields .bilingual-add .hint { font-size: 11px; font-weight: 400; color: var(--gray); margin-top: 2px; }
+
+/* Dynamic row-table fields (Stakeholder Register, WBS, Risk Register...) */
+.rowtable-field { display: flex; flex-direction: column; gap: 8px; }
+.rowtable-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+table.rowtable { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.rowtable th { background: var(--bg); color: var(--navy); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+table.rowtable td { padding: 4px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+table.rowtable input, table.rowtable select { width: 100%; padding: 5px 6px; border-radius: 5px; border: 1px solid var(--border); font-size: 12.5px; font-family: inherit; box-sizing: border-box; }
+table.rowtable input.row-other { margin-top: 4px; }
+.row-remove { background: none; border: none; color: var(--red); cursor: pointer; font-size: 14px; padding: 2px 8px; }
+.row-remove:hover { background: #fdeceb; border-radius: 4px; }
+
 .pm-map { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 18px; }
 .pm-map .step { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 12.5px; font-weight: 600; color: var(--navy); }
 .pm-map .arrow { color: var(--gray); align-self: center; }

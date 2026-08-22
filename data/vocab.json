@@ -1,0 +1,47 @@
+{
+  "stakeholderRoles": [
+    { "en": "Owner / Client", "vi": "Chủ đầu tư" },
+    { "en": "Sponsor", "vi": "Nhà tài trợ" },
+    { "en": "Construction Contractor", "vi": "Nhà thầu thi công" },
+    { "en": "Subcontractor", "vi": "Nhà thầu phụ" },
+    { "en": "Design Consultant", "vi": "Tư vấn thiết kế" },
+    { "en": "Supervision Consultant", "vi": "Tư vấn giám sát" },
+    { "en": "Government Authority", "vi": "Cơ quan quản lý nhà nước" },
+    { "en": "Material Supplier", "vi": "Nhà cung cấp vật tư" },
+    { "en": "Affected Community", "vi": "Cộng đồng bị ảnh hưởng" },
+    { "en": "Operator", "vi": "Đơn vị vận hành" }
+  ],
+  "riskLevels": [
+    { "en": "High", "vi": "Cao" },
+    { "en": "Medium", "vi": "Trung bình" },
+    { "en": "Low", "vi": "Thấp" }
+  ],
+  "scheduleStatuses": [
+    { "en": "On Schedule", "vi": "Đúng tiến độ" },
+    { "en": "Behind Schedule", "vi": "Chậm tiến độ" },
+    { "en": "Ahead of Schedule", "vi": "Vượt tiến độ" }
+  ],
+  "costStatuses": [
+    { "en": "Within Budget", "vi": "Trong ngân sách" },
+    { "en": "Over Budget", "vi": "Vượt ngân sách" },
+    { "en": "Under Budget", "vi": "Dưới ngân sách" }
+  ],
+  "approvalStatuses": [
+    { "en": "Pending Approval (CCB)", "vi": "Chờ duyệt (CCB)" },
+    { "en": "Approved", "vi": "Đã duyệt" },
+    { "en": "Rejected", "vi": "Từ chối" },
+    { "en": "Conditionally Approved", "vi": "Duyệt có điều kiện" }
+  ],
+  "issueStatuses": [
+    { "en": "Open", "vi": "Đang mở" },
+    { "en": "In Progress", "vi": "Đang xử lý" },
+    { "en": "Resolved", "vi": "Đã xử lý" },
+    { "en": "Closed", "vi": "Đã đóng" }
+  ],
+  "contractTypes": [
+    { "en": "Firm Fixed Price (FFP)", "vi": "Giá cố định trọn gói (FFP)" },
+    { "en": "Cost Plus Fixed Fee (CPFF)", "vi": "Hoàn phí cộng phí cố định (CPFF)" },
+    { "en": "Cost Plus Incentive Fee (CPIF)", "vi": "Hoàn phí cộng phí thưởng (CPIF)" },
+    { "en": "Time & Material (T&M)", "vi": "Theo thời gian & vật tư (T&M)" }
+  ]
+}
